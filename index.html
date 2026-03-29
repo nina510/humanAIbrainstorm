@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brainstorming with AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Sora", "ui-sans-serif", "system-ui"],
+              body: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui"],
+            },
+            colors: {
+              ink: "#1C2233",
+              sky: "#F3F7FF",
+              skyStrong: "#E6EEFF",
+              cloud: "#F6F6F6",
+              slate: "#6B7280",
+              accent: "#4F7BFF",
+              accentSoft: "#E8F0FF",
+            },
+            boxShadow: {
+              soft: "0 12px 30px rgba(26, 39, 77, 0.08)",
+              subtle: "0 4px 12px rgba(26, 39, 77, 0.08)",
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gradient-to-br from-white via-[#F7F9FF] to-[#EEF3FF] text-ink">
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo, useRef } = React;
+
+      const initialPrompt =
+        "Nike Run. To invite people of all ages to engage in citywide running activities.";
+      const aiFirstMessage =
+        "Great brief. To shape a compelling campaign, can you share what feels most distinctive about your city’s running culture right now?";
+
+      const mockChecklist = [
+        "A single concise paragraph (under 75 words)",
+        "Includes a campaign concept, its underlying cultural or consumer insight, and the target audience",
+      ];
+
+      const mockSteps = [
+        {
+          prefix: "You need to",
+          highlight: "first write out your complete idea.",
+        },
+        {
+          prefix: "Then you will have",
+          highlight: "two rounds of",
+          suffix: "discussion with the AI.",
+        },
+      ];
+
+      // Mock async AI reply to keep behavior extensible.
+      const sendMessageToAI = async (message) => {
+        await new Promise((resolve) => setTimeout(resolve, 900));
+        return `Here’s a quick refinement: focus on one clear insight from “${message.slice(
+          0,
+          60
+        )}${message.length > 60 ? "…" : ""}”. What single sentence captures the community benefit?`;
+      };
+
+      const TaskCard = ({ children }) => (
+        <div className="rounded-2xl bg-white/80 border border-white/60 shadow-subtle p-6">
+          {children}
+        </div>
+      );
+
+      const TaskSidebar = () => (
+        <aside className="bg-sky rounded-[28px] p-6 lg:p-8 h-full flex flex-col gap-6 shadow-soft">
+          <div>
+            <h2 className="font-display text-2xl text-accent">Task description</h2>
+          </div>
+          <TaskCard>
+            <p className="font-body text-base leading-relaxed text-ink">
+              In this brainstorm task, you refine and explore more about the original{' '}
+              <span className="text-accent font-semibold">Nike campaign concept idea</span>.
+            </p>
+            <div className="mt-5">
+              <p className="font-body text-sm font-semibold text-slate">The final outcome should be</p>
+              <ul className="mt-4 flex flex-col gap-3">
+                {mockChecklist.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-slate">
+                    <span className="mt-1 h-5 w-5 rounded-full bg-accentSoft flex items-center justify-center text-accent font-semibold">
+                      ✓
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </TaskCard>
+
+          <div>
+            <h3 className="font-display text-xl text-accent">To get start</h3>
+            <div className="mt-4 flex flex-col gap-4">
+              {mockSteps.map((step, idx) => (
+                <div
+                  key={`${step.prefix}-${idx}`}
+                  className="flex items-start gap-4 rounded-2xl bg-white/70 border border-white/60 p-4"
+                >
+                  <div className="h-8 w-8 rounded-xl bg-accentSoft flex items-center justify-center font-display text-accent">
+                    {idx + 1}
+                  </div>
+                  <p className="text-sm text-ink font-body leading-relaxed">
+                    {step.prefix}{" "}
+                    <span className="text-accent font-semibold">{step.highlight}</span>{" "}
+                    {step.suffix ?? ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      );
+
+      const ModeSwitcher = ({ mode, onChange }) => (
+        <div className="inline-flex rounded-full bg-white border border-slate/20 p-1 shadow-subtle">
+          {[
+            { label: "User starts", value: "user_first" },
+            { label: "AI starts", value: "ai_first" },
+          ].map((option) => (
+            <button
+              key={option.value}
+              onClick={() => onChange(option.value)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+                mode === option.value
+                  ? "bg-accent text-white shadow"
+                  : "text-slate hover:text-ink"
+              }`}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      );
+
+      const PromptBanner = ({ text }) => (
+        <div className="rounded-2xl border border-accent/20 bg-accentSoft/60 px-5 py-4 shadow-subtle">
+          <p className="text-sm text-ink text-center font-body">“{text}”</p>
+        </div>
+      );
+
+      const MessageBubble = ({ role, content }) => {
+        const isUser = role === "user";
+        return (
+          <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-subtle ${
+                isUser
+                  ? "bg-accent text-white"
+                  : "bg-white border border-slate/10 text-ink"
+              }`}
+            >
+              {content}
+            </div>
+          </div>
+        );
+      };
+
+      const ChatInput = ({ value, onChange, onSend, disabled }) => (
+        <div className="bg-cloud rounded-2xl border border-slate/10 p-4 shadow-subtle">
+          <div className="flex flex-col gap-3">
+            <textarea
+              className="w-full resize-none bg-transparent text-sm focus:outline-none font-body text-ink"
+              rows={3}
+              placeholder="Write your completed campaign idea first..."
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  onSend();
+                }
+              }}
+            />
+            <div className="flex justify-end">
+              <button
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                  disabled
+                    ? "bg-slate/20 text-slate cursor-not-allowed"
+                    : "bg-accent text-white hover:bg-[#3F6CFF]"
+                }`}
+                onClick={onSend}
+                type="button"
+                disabled={disabled}
+              >
+                {disabled ? "Sending..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
+      const ChatWindow = ({ messages, loading }) => (
+        <div className="flex flex-col gap-4">
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} role={msg.role} content={msg.content} />
+          ))}
+          {loading && (
+            <MessageBubble role="assistant" content="Thinking through ideas..." />
+          )}
+        </div>
+      );
+
+      const App = () => {
+        const [conversationMode, setConversationMode] = useState("user_first");
+        const [messages, setMessages] = useState([]);
+        const [inputValue, setInputValue] = useState("");
+        const [loading, setLoading] = useState(false);
+        const bottomRef = useRef(null);
+
+        // Reset chat when switching modes.
+        useEffect(() => {
+          if (conversationMode === "ai_first") {
+            setMessages([
+              {
+                id: "ai-first",
+                role: "assistant",
+                content: aiFirstMessage,
+              },
+            ]);
+          } else {
+            setMessages([]);
+          }
+          setInputValue("");
+          setLoading(false);
+        }, [conversationMode]);
+
+        // Auto-scroll to latest message.
+        useEffect(() => {
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [messages, loading]);
+
+        const handleSend = async () => {
+          if (!inputValue.trim() || loading) return;
+          const userMessage = {
+            id: `user-${Date.now()}`,
+            role: "user",
+            content: inputValue.trim(),
+          };
+          setMessages((prev) => [...prev, userMessage]);
+          setInputValue("");
+          setLoading(true);
+
+          const aiReply = await sendMessageToAI(userMessage.content);
+          setMessages((prev) => [
+            ...prev,
+            { id: `ai-${Date.now()}`, role: "assistant", content: aiReply },
+          ]);
+          setLoading(false);
+        };
+
+        return (
+          <div className="min-h-screen p-4 lg:p-8">
+            <div className="max-w-6xl mx-auto bg-white/70 rounded-[32px] shadow-soft border border-white/80 overflow-hidden">
+              <div className="grid lg:grid-cols-[35%_65%] gap-0">
+                <div className="p-4 lg:p-6">
+                  <TaskSidebar />
+                </div>
+                <div className="bg-[#F2F2F2] flex flex-col min-h-[720px]">
+                  <div className="px-6 pt-6 pb-4 border-b border-slate/10">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <h1 className="font-display text-xl text-ink">
+                          Brainstorming with AI
+                        </h1>
+                        <ModeSwitcher
+                          mode={conversationMode}
+                          onChange={setConversationMode}
+                        />
+                      </div>
+                      <PromptBanner text={initialPrompt} />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-6 py-6" id="chat-scroll">
+                    <ChatWindow messages={messages} loading={loading} />
+                    <div ref={bottomRef} />
+                  </div>
+
+                  <div className="px-6 pb-6">
+                    <ChatInput
+                      value={inputValue}
+                      onChange={setInputValue}
+                      onSend={handleSend}
+                      disabled={!inputValue.trim() || loading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
