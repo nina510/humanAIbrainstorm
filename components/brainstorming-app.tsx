@@ -8,16 +8,18 @@ import { PromptBanner } from "@/components/prompt-banner";
 import { TaskSidebar } from "@/components/task-sidebar";
 import type { ConversationMode, Message } from "@/components/types";
 
-const initialPrompt =
-  "Nike Run. To invite people of all ages to engage in citywide running activities.";
+const sharedPrompt =
+  "Idea starting point: “Nike Run — a campaign designed to get people involved in running and discover Nike’s running products.”";
 
 const aiFirstMessage =
-  "This is my idea, and I’m confident it delivers both cultural relevance and scalable impact, and it must be a good refinement: “Nike launches “Run the City Back,” a campaign that turns everyday runs into visible community impact. Through the Nike Run Club app, runners log miles that unlock funding to restore playgrounds, tracks, and local sports spaces in neighborhoods that have lost them. As cities light up mile by mile on a public map, runners see their movement rebuilding the places where the next generation will learn to play.”";
+  "This is my idea, and I’m confident it delivers both nowadays consumer insight and scalable impact, and it must be a good refinement: “Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance and earn a finisher medal, while also engaging with Nike’s running products throughout the experience.”";
 
 const createInitialMessages = (mode: ConversationMode): Message[] =>
   mode === "ai_first"
     ? [{ id: "assistant-opening", role: "assistant", content: aiFirstMessage }]
     : [];
+
+const getInitialPrompt = (_mode: ConversationMode) => sharedPrompt;
 
 async function sendMessageToAI(
   messages: Message[],
@@ -90,7 +92,10 @@ export function BrainstormingApp() {
     setLoading(true);
 
     try {
-      const assistantReply = await sendMessageToAI(nextMessages, initialPrompt);
+      const assistantReply = await sendMessageToAI(
+        nextMessages,
+        getInitialPrompt(conversationMode),
+      );
 
       if (requestVersionRef.current !== requestVersion) {
         return;
@@ -153,7 +158,7 @@ export function BrainstormingApp() {
                 />
               </div>
 
-              <PromptBanner prompt={initialPrompt} />
+              <PromptBanner prompt={getInitialPrompt(conversationMode)} />
             </div>
           </div>
 

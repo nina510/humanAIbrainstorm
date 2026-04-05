@@ -41,21 +41,14 @@ export async function POST(request: Request) {
   });
 
   try {
+    const transcript = body.messages
+      .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+      .join("\n\n");
+
     const response = await client.responses.create({
       model,
       instructions: `You are a concise brainstorming partner. The fixed task prompt is: ${body.initialPrompt} Reply in English with exactly one paragraph and keep it under 75 words. Focus on refining the campaign concept with a clear idea, the underlying cultural or consumer insight, and the target audience. Do not use bullets, numbering, labels, or multiple paragraphs.`,
-      input: body.messages.map((message) => ({
-        role: message.role,
-        content: [
-          {
-            type:
-              message.role === "assistant"
-                ? ("output_text" as const)
-                : ("input_text" as const),
-            text: message.content,
-          },
-        ],
-      })),
+      input: transcript,
     });
 
     return NextResponse.json({ reply: response.output_text });
