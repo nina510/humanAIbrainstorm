@@ -12,7 +12,7 @@ const sharedPrompt =
   "Idea starting point: “Nike Run — a campaign designed to get people involved in running and discover Nike’s running products.”";
 
 const aiFirstMessage =
-  "This is my idea, and I’m confident it delivers both nowadays consumer insight and scalable impact, and it must be a good refinement: “Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance and earn a finisher medal, while also engaging with Nike’s running products throughout the experience.”";
+  "This could be one possible idea to consider, though it may still benefit from further refinement. It might also be helpful to frame it in terms of both individual participation and broader community impact: “Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance and earn a finisher medal, while also engaging with Nike’s running products throughout the experience.”";
 
 const createInitialMessages = (mode: ConversationMode): Message[] =>
   mode === "ai_first"
