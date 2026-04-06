@@ -8,7 +8,10 @@ import { PromptBanner } from "@/components/prompt-banner";
 import { TaskSidebar } from "@/components/task-sidebar";
 import type { ConversationMode, Message } from "@/components/types";
 
-const sharedPrompt =
+const userFirstPrompt =
+  "Please write your campaign idea first. You should include (1) idea, (2) audience, (3) why it would appeal to the audience in your idea. The idea needs to have a completed rationale, and needs to be novel.";
+
+const aiFirstPrompt =
   "Idea starting point: “Nike Run — a campaign designed to get people involved in running and discover Nike’s running products.”";
 
 const aiFirstMessage =
@@ -19,7 +22,8 @@ const createInitialMessages = (mode: ConversationMode): Message[] =>
     ? [{ id: "assistant-opening", role: "assistant", content: aiFirstMessage }]
     : [];
 
-const getInitialPrompt = (_mode: ConversationMode) => sharedPrompt;
+const getInitialPrompt = (mode: ConversationMode) =>
+  mode === "user_first" ? userFirstPrompt : aiFirstPrompt;
 
 async function sendMessageToAI(
   messages: Message[],

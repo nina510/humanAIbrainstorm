@@ -19,11 +19,23 @@ export function TaskSidebar({ mode }: TaskSidebarProps) {
 
         <TaskCard title="">
           <p>
-            In this brainstorming task, you refine and explore more about{" "}
-            <span className="font-semibold text-[#1d56ef]">
-              a Nike marketing campaign idea
-            </span>{" "}
-            (e.g., an event or activity to promote Nike)
+            {isUserFirst ? (
+              <>
+                In this brainstorming task, you need to add more details about{" "}
+                <span className="font-semibold text-[#1d56ef]">
+                  a Nike marketing campaign idea
+                </span>{" "}
+                (e.g., an event or activity to promote Nike)
+              </>
+            ) : (
+              <>
+                In this brainstorming task, you refine and explore more about{" "}
+                <span className="font-semibold text-[#1d56ef]">
+                  a Nike marketing campaign idea
+                </span>{" "}
+                (e.g., an event or activity to promote Nike)
+              </>
+            )}
           </p>
           <p className="mt-8 text-black">The final outcome should be</p>
 
@@ -32,15 +44,20 @@ export function TaskSidebar({ mode }: TaskSidebarProps) {
               <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#c8d5ff] text-white">
                 ✓
               </span>
-              <span>A single concise paragraph (under 75 words)</span>
+              <span>
+                {isUserFirst
+                  ? "A single paragraph (under 75 words)"
+                  : "A single concise paragraph (under 75 words)"}
+              </span>
             </li>
             <li className="flex gap-3">
               <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#c8d5ff] text-white">
                 ✓
               </span>
               <span>
-                Includes a campaign concept, its underlying cultural or
-                consumer insight, and the target audience.
+                {isUserFirst
+                  ? "Includes an idea, its target audience, and why the idea appeals to the audience."
+                  : "Includes a campaign concept, its underlying cultural or consumer insight, and the target audience."}
               </span>
             </li>
             <li className="flex gap-3">
@@ -68,8 +85,11 @@ export function TaskSidebar({ mode }: TaskSidebarProps) {
                 <>
                   You need to{" "}
                   <span className="font-semibold text-[#1d56ef]">
-                    first write out your revised idea.
-                  </span>
+                    add more details to this
+                  </span>{" "}
+                  idea starting point: “Nike Run — a campaign designed to get
+                  people involved in running and discover Nike’s running
+                  products.”.
                 </>
               ) : (
                 <>
