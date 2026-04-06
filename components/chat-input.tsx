@@ -6,6 +6,7 @@ type ChatInputProps = {
   onSend: () => void;
   disabled: boolean;
   loading: boolean;
+  helperText?: string;
 };
 
 export function ChatInput({
@@ -14,32 +15,39 @@ export function ChatInput({
   onSend,
   disabled,
   loading,
+  helperText,
 }: ChatInputProps) {
   return (
     <div className="border-t border-line/70 bg-white px-4 py-4 sm:px-6">
-      <div className="flex items-end gap-3 rounded-[1.5rem] border border-line bg-panel p-3 shadow-sm">
-        <textarea
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              onSend();
-            }
-          }}
-          placeholder="Write your completed campaign idea first..."
-          rows={1}
-          className="max-h-40 min-h-[56px] flex-1 resize-none bg-transparent px-2 py-3 text-sm text-ink outline-none placeholder:text-slate-400"
-        />
+      <div className="rounded-[1.5rem] border border-line bg-panel p-3 shadow-sm">
+        <div className="flex items-end gap-3">
+          <textarea
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder="Write your campaign idea first..."
+            rows={1}
+            className="max-h-40 min-h-[56px] flex-1 resize-none bg-transparent px-2 py-3 text-sm text-ink outline-none placeholder:text-slate-400"
+          />
 
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={disabled}
-          className="inline-flex h-12 items-center justify-center rounded-2xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accentDeep disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          {loading ? "Thinking..." : "Send"}
-        </button>
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={disabled}
+            className="inline-flex h-12 items-center justify-center rounded-2xl bg-accent px-5 text-sm font-semibold text-white transition hover:bg-accentDeep disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {loading ? "Thinking..." : "Send"}
+          </button>
+        </div>
+
+        {helperText ? (
+          <p className="px-2 pb-1 pt-2 text-xs text-slate-500">{helperText}</p>
+        ) : null}
       </div>
     </div>
   );
