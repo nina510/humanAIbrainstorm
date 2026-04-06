@@ -12,10 +12,10 @@ const userFirstPrompt =
   "Please write your campaign idea first. You should include (1) idea, (2) audience, (3) why it would appeal to the audience in your idea. The idea needs to have a completed rationale, and needs to be novel.";
 
 const aiFirstPrompt =
-  "Idea starting point: “Nike Run — a campaign designed to get people involved in running and discover Nike’s running products.”";
+  "Write a campaign idea. You should include (1) idea, (2) audience, (3) why it would appeal to the audience in your idea. The idea needs to have a completed rationale, and needs to be novel.";
 
 const aiFirstMessage =
-  "This could be one possible idea to consider, though it may still benefit from further refinement. It might also be helpful to frame it in terms of both individual participation and broader community impact: “Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance and earn a finisher medal, while also engaging with Nike’s running products throughout the experience.”";
+  "This is my idea, and I’m confident it delivers both nowadays consumer insight and scalable impact, and it must be a good refinement: “idea: Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. Audience: Citizen runners. Why it appeals to audience: As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance.”";
 
 const createInitialMessages = (mode: ConversationMode): Message[] =>
   mode === "ai_first"
@@ -24,6 +24,12 @@ const createInitialMessages = (mode: ConversationMode): Message[] =>
 
 const getInitialPrompt = (mode: ConversationMode) =>
   mode === "user_first" ? userFirstPrompt : aiFirstPrompt;
+
+const firstUserMessageMinimumWords = 40;
+
+function countWords(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
 
 async function sendMessageToAI(
   messages: Message[],
@@ -71,14 +77,36 @@ export function BrainstormingApp() {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const canSend = useMemo(
-    () => inputValue.trim().length > 0 && !loading,
-    [inputValue, loading],
+  const hasUserMessage = useMemo(
+    () => messages.some((message) => message.role === "user"),
+    [messages],
   );
+  const inputWordCount = useMemo(() => countWords(inputValue), [inputValue]);
+  const needsFirstMessageMinimum =
+    conversationMode === "user_first" && !hasUserMessage;
+  const remainingWords = needsFirstMessageMinimum
+    ? Math.max(firstUserMessageMinimumWords - inputWordCount, 0)
+    : 0;
+  const firstMessageBlocked =
+    needsFirstMessageMinimum && inputValue.trim().length > 0 && remainingWords > 0;
+  const canSend = useMemo(
+    () =>
+      inputValue.trim().length > 0 &&
+      !loading &&
+      (!needsFirstMessageMinimum || remainingWords === 0),
+    [inputValue, loading, needsFirstMessageMinimum, remainingWords],
+  );
+  const helperText = firstMessageBlocked
+    ? `Add ${remainingWords} more word${remainingWords === 1 ? "" : "s"} before you can send your first message.`
+    : undefined;
 
   const handleSend = async () => {
     const trimmed = inputValue.trim();
-    if (!trimmed || loading) {
+    if (
+      !trimmed ||
+      loading ||
+      (needsFirstMessageMinimum && countWords(trimmed) < firstUserMessageMinimumWords)
+    ) {
       return;
     }
 
@@ -178,6 +206,7 @@ export function BrainstormingApp() {
               onSend={handleSend}
               disabled={!canSend}
               loading={loading}
+              helperText={helperText}
             />
           </div>
         </section>
