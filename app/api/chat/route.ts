@@ -1,5 +1,10 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import {
+  isSurveyVariantKey,
+  surveyConfigs,
+  type SurveyVariantKey,
+} from "@/lib/survey-config";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -7,8 +12,8 @@ type ChatMessage = {
 };
 
 type ChatRequest = {
+  configKey: SurveyVariantKey;
   messages: ChatMessage[];
-  initialPrompt: string;
 };
 
 const model = process.env.OPENAI_MODEL || "gpt-5-mini";
@@ -35,6 +40,11 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (!isSurveyVariantKey(body.configKey)) {
+    return NextResponse.json({ error: "Invalid config key." }, { status: 400 });
+  }
+
+  const config = surveyConfigs[body.configKey];
 
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -47,7 +57,7 @@ export async function POST(request: Request) {
 
     const response = await client.responses.create({
       model,
-      instructions: `You are a concise brainstorming partner. The fixed task prompt is: ${body.initialPrompt} Reply in English with exactly one paragraph and keep it under 75 words. Focus on refining the campaign concept with a clear idea, the underlying cultural or consumer insight, and the target audience. Do not use bullets, numbering, labels, or multiple paragraphs.`,
+      instructions: `${config.systemPrompt} The fixed task prompt is: ${config.taskPrompt}`,
       input: transcript,
     });
 

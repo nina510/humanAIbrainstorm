@@ -3,29 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatInput } from "@/components/chat-input";
 import { ChatWindow } from "@/components/chat-window";
-import { ModeSwitcher } from "@/components/mode-switcher";
 import { PromptBanner } from "@/components/prompt-banner";
 import { TaskSidebar } from "@/components/task-sidebar";
-import type { ConversationMode, Message } from "@/components/types";
+import type { Message } from "@/components/types";
+import type { SurveyConfig } from "@/lib/survey-config";
 
-const userFirstPrompt =
-  "Please write your campaign idea first. You should include (1) idea, (2) audience, (3) why it would appeal to the audience in your idea. The idea needs to have a completed rationale, and needs to be novel.";
-
-const aiFirstPrompt =
-  "Write a campaign idea. You should include (1) idea, (2) audience, (3) why it would appeal to the audience in your idea. The idea needs to have a completed rationale, and needs to be novel.";
-
-const aiFirstMessage =
-  "This is my idea, and I’m confident it delivers both nowadays consumer insight and scalable impact, and it must be a good refinement: “idea: Nike launches “Run Through the City,” a campaign that encourages people across the city to get moving and rediscover the joy of running. Audience: Citizen runners. Why it appeals to audience: As many people today lack motivation to run, Nike organizes a city-wide running event that invites participants of all ages to join. Through the marathon-style activity, runners can track their performance.”";
-
-const createInitialMessages = (mode: ConversationMode): Message[] =>
-  mode === "ai_first"
-    ? [{ id: "assistant-opening", role: "assistant", content: aiFirstMessage }]
+const createInitialMessages = (config: SurveyConfig): Message[] =>
+  config.mode === "ai_first" && config.aiFirstMessage
+    ? [{ id: "assistant-opening", role: "assistant", content: config.aiFirstMessage }]
     : [];
-
-const getInitialPrompt = (mode: ConversationMode) =>
-  mode === "user_first" ? userFirstPrompt : aiFirstPrompt;
-
-const firstUserMessageMinimumWords = 40;
 
 function countWords(value: string) {
   return value.trim().split(/\s+/).filter(Boolean).length;
@@ -33,7 +19,7 @@ function countWords(value: string) {
 
 async function sendMessageToAI(
   messages: Message[],
-  prompt: string,
+  configKey: SurveyConfig["key"],
 ): Promise<string> {
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -41,8 +27,8 @@ async function sendMessageToAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      configKey,
       messages: messages.map(({ role, content }) => ({ role, content })),
-      initialPrompt: prompt,
     }),
   });
 
@@ -55,11 +41,13 @@ async function sendMessageToAI(
   return data.reply;
 }
 
-export function BrainstormingApp() {
-  const [conversationMode, setConversationMode] =
-    useState<ConversationMode>("user_first");
+type BrainstormingAppProps = {
+  config: SurveyConfig;
+};
+
+export function BrainstormingApp({ config }: BrainstormingAppProps) {
   const [messages, setMessages] = useState<Message[]>(() =>
-    createInitialMessages("user_first"),
+    createInitialMessages(config),
   );
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,10 +56,10 @@ export function BrainstormingApp() {
 
   useEffect(() => {
     requestVersionRef.current += 1;
-    setMessages(createInitialMessages(conversationMode));
+    setMessages(createInitialMessages(config));
     setInputValue("");
     setLoading(false);
-  }, [conversationMode]);
+  }, [config]);
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -83,9 +71,9 @@ export function BrainstormingApp() {
   );
   const inputWordCount = useMemo(() => countWords(inputValue), [inputValue]);
   const needsFirstMessageMinimum =
-    conversationMode === "user_first" && !hasUserMessage;
+    config.mode === "user_first" && !hasUserMessage && !!config.firstMessageMinimumWords;
   const remainingWords = needsFirstMessageMinimum
-    ? Math.max(firstUserMessageMinimumWords - inputWordCount, 0)
+    ? Math.max((config.firstMessageMinimumWords ?? 0) - inputWordCount, 0)
     : 0;
   const firstMessageBlocked =
     needsFirstMessageMinimum && inputValue.trim().length > 0 && remainingWords > 0;
@@ -105,7 +93,8 @@ export function BrainstormingApp() {
     if (
       !trimmed ||
       loading ||
-      (needsFirstMessageMinimum && countWords(trimmed) < firstUserMessageMinimumWords)
+      (needsFirstMessageMinimum &&
+        countWords(trimmed) < (config.firstMessageMinimumWords ?? 0))
     ) {
       return;
     }
@@ -124,10 +113,7 @@ export function BrainstormingApp() {
     setLoading(true);
 
     try {
-      const assistantReply = await sendMessageToAI(
-        nextMessages,
-        getInitialPrompt(conversationMode),
-      );
+      const assistantReply = await sendMessageToAI(nextMessages, config.key);
 
       if (requestVersionRef.current !== requestVersion) {
         return;
@@ -169,28 +155,21 @@ export function BrainstormingApp() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(141,180,255,0.2),_transparent_35%),linear-gradient(180deg,_#f6f9ff_0%,_#edf4ff_100%)] px-4 py-4 text-ink sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl flex-col gap-4 lg:flex-row">
-        <TaskSidebar mode={conversationMode} />
+        <TaskSidebar mode={config.mode} />
 
         <section className="flex min-h-[70vh] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-soft backdrop-blur">
           <div className="border-b border-line/70 px-5 py-5 sm:px-7">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accentDeep/70">
-                    Chat Workspace
-                  </p>
-                  <h1 className="text-2xl font-semibold tracking-tight">
-                    Brainstorming with AI
-                  </h1>
-                </div>
-
-                <ModeSwitcher
-                  mode={conversationMode}
-                  onChange={setConversationMode}
-                />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accentDeep/70">
+                  Chat Workspace
+                </p>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  Brainstorming with AI
+                </h1>
               </div>
 
-              <PromptBanner prompt={getInitialPrompt(conversationMode)} />
+              <PromptBanner prompt={config.taskPrompt} />
             </div>
           </div>
 
